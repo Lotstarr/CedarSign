@@ -4,8 +4,8 @@
 
 - URL: https://cedarsign.vercel.app
 - Team/project: Lotstarr / cedarsign
-- Deployment: `dpl_31nCSVpG4n1aNXN18qWPVVXPPKQm`
-- Application commit: `dbad12c30fc79c34c61c6c476be9f6933483fdad`
+- Deployment: `dpl_AQhXfurxdQW1hU8G3Xqjjx7kxXXr`
+- Application commit: `d5591f34cc0d34ffa40177915b0c5db87800c92a`
 - Target/state: production / READY, reconfirmed during delivery review.
 - Access: Vercel Authentication enabled for **all** deployments, including production.
 
@@ -45,3 +45,7 @@ The corrected MuPDF page images and image-cache version are deployed to the same
 ## Placement guidance update
 
 The revised field layout controls are deployed and Vercel reports READY. The hosted JavaScript returned HTTP 200 and contains the explicit empty-field state and placed-field editor. Six service tests and thirteen local browser checkpoints passed, including the reported Date selection flow at 718 × 827. The application checkpoint above is the local source commit; GitHub receives an equivalent source snapshot through the connected app.
+
+## Functional review deployment
+
+The reviewed build is deployed and READY on the existing aliases. An authenticated request to the hosted JavaScript returned HTTP 200 and confirmed the friendly Signer Name label and missing-recipient-signature guard. The build, eight service tests, and seventeen local browser checkpoints passed before upload. Responsive and typography screenshots were inspected. Authentication protection was not changed. See VERIFICATION.md for scope and findings.

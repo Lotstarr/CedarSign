@@ -155,6 +155,12 @@ export function issueDocument(
   );
   assert(
     doc.fields.some(
+      (f) => f.assignee === "recipient" && f.type === "signature",
+    ),
+    "Add a recipient signature field before issuing the agreement.",
+  );
+  assert(
+    doc.fields.some(
       (f) =>
         f.assignee === "sender" &&
         f.type === "signature" &&

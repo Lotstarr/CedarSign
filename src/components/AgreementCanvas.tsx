@@ -14,6 +14,8 @@ export const fieldTypes: FieldType[] = [
   "signature",
   "signerName",
 ];
+export const fieldTypeLabel = (type: FieldType) =>
+  type === "signerName" ? "Signer Name" : type;
 interface Props {
   doc: SigningDocument;
   source: SourceDocument;
@@ -46,7 +48,7 @@ export function AgreementCanvas({
             </span>
             <span>
               {placing
-                ? `Click this page to place ${placing}`
+                ? `Click this page to place ${fieldTypeLabel(placing)}`
                 : configuring
                   ? "Configure layout"
                   : "Agreement"}

@@ -14,7 +14,12 @@ import {
   issueDocument,
 } from "../services/documentService";
 import { saveTemplate } from "../services/templateService";
-import { AgreementCanvas, FieldLegend, fieldTypes } from "./AgreementCanvas";
+import {
+  AgreementCanvas,
+  FieldLegend,
+  fieldTypes,
+  fieldTypeLabel,
+} from "./AgreementCanvas";
 export function AgreementWorkspace({
   doc,
   user,
@@ -171,14 +176,15 @@ export function AgreementWorkspace({
                       setNotice("");
                     }}
                   >
-                    {type}
+                    {fieldTypeLabel(type)}
                   </button>
                 ))}
               </div>
               {placing && (
                 <p role="status" className="placement-help">
                   <strong>
-                    2. Click the document to place your {placing} field.
+                    2. Click the document to place your{" "}
+                    {fieldTypeLabel(placing)} field.
                   </strong>
                   <span>
                     {placing === "date"
@@ -237,7 +243,9 @@ export function AgreementWorkspace({
                       }
                     >
                       {fieldTypes.map((t) => (
-                        <option key={t}>{t}</option>
+                        <option key={t} value={t}>
+                          {fieldTypeLabel(t)}
+                        </option>
                       ))}
                     </select>
                   </label>

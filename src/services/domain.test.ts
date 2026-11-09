@@ -13,6 +13,73 @@ import { createDocument, saveTemplate } from "./templateService";
 import { createLocalRepository } from "../repositories/localRepository";
 
 describe("signing boundaries", () => {
+  it("keeps an unfinished layout editable when the recipient has no signature field", () => {
+    const { documents, users } = createSeedData();
+    const recipientSignature = documents[0].fields.find(
+      (f) => f.assignee === "recipient" && f.type === "signature",
+    )!;
+    let draft = configureDocument(documents[0], users[0], {
+      recipientId: users[1].id,
+      fields: documents[0].fields.filter((f) => f.id !== recipientSignature.id),
+    });
+    for (const field of draft.fields.filter(
+      (f) => f.assignee === "sender" && ["signature", "text"].includes(f.type),
+    )) {
+      draft = fillField(
+        draft,
+        users[0],
+        field.id,
+        field.type === "signature" ? "Jordan Vance" : "Manager",
+      );
+    }
+    const before = structuredClone(draft);
+    expect(() => issueDocument(draft, users[0], users)).toThrow(
+      "Add a recipient signature field",
+    );
+    expect(draft).toEqual(before);
+    expect(getCapabilities(draft, users[0]).configure).toBe(true);
+    const repaired = configureDocument(draft, users[0], {
+      fields: [...draft.fields, recipientSignature],
+    });
+    expect(issueDocument(repaired, users[0], users).status).toBe("sent");
+  });
+  it("preserves a manually entered date and captures automatic sender fields at issue time", () => {
+    const { documents, users } = createSeedData();
+    const date = documents[0].fields.find(
+      (f) => f.assignee === "sender" && f.type === "date",
+    )!;
+    let draft = configureDocument(documents[0], users[0], {
+      recipientId: users[1].id,
+      fields: documents[0].fields.map((f) =>
+        f.id === date.id ? { ...f, autoFillSigningDate: false } : f,
+      ),
+    });
+    for (const field of draft.fields.filter(
+      (f) => f.assignee === "sender" && f.type !== "signerName",
+    )) {
+      draft = fillField(
+        draft,
+        users[0],
+        field.id,
+        field.type === "date"
+          ? "2026-11-01"
+          : field.type === "signature"
+            ? "Jordan Vance"
+            : "Manager",
+      );
+    }
+    const now = "2026-11-09T20:30:00.000Z";
+    const sent = issueDocument(draft, users[0], users, now);
+    expect(sent.values[date.id].value).toBe("2026-11-01");
+    const name = sent.fields.find(
+      (f) => f.assignee === "sender" && f.type === "signerName",
+    )!;
+    expect(sent.values[name.id]).toEqual({
+      value: "Jordan Vance",
+      filledByUserId: "jordan",
+      filledAt: now,
+    });
+  });
   it("rejects unauthorized access, including direct IDs and draft recipients", () => {
     const { documents, users } = createSeedData();
     expect(() =>

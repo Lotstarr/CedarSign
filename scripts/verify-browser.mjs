@@ -263,7 +263,12 @@ for (const type of [
   "signature",
   "signerName",
 ]) {
-  await page.getByRole("button", { name: type, exact: true }).click();
+  await page
+    .getByRole("button", {
+      name: type === "signerName" ? "Signer Name" : type,
+      exact: true,
+    })
+    .click();
   const p = page.locator(".agreement-page").first();
   const bounds = await p.boundingBox();
   await p.click({
@@ -298,6 +303,101 @@ await page.getByLabel("Required", { exact: true }).uncheck();
 await page.getByRole("button", { name: "Delete field" }).click();
 assert.equal(await page.locator(".field-overlay").count(), 5);
 pass("Field assignment, required configuration, and deletion work");
+await page.getByLabel("Send to").selectOption("casey");
+await page.getByRole("button", { name: "Fill & sign", exact: true }).click();
+for (const [label, value] of Object.entries({
+  "Text *": "Example",
+  "Email *": "jordan@example.com",
+  "Phone *": "817-555-0101",
+  "Signature *": "Jordan Vance",
+})) {
+  await page.getByLabel(label, { exact: true }).fill(value);
+}
+await page.getByRole("button", { name: "Sign & issue agreement →" }).click();
+await page
+  .getByRole("alert")
+  .filter({ hasText: "Add a recipient signature field" })
+  .waitFor();
+await page.getByRole("button", { name: "Place fields", exact: true }).click();
+await page.getByRole("button", { name: "signature", exact: true }).click();
+const signaturePage = page.locator(".agreement-page").nth(1);
+const signatureBounds = await signaturePage.boundingBox();
+await signaturePage.click({
+  position: {
+    x: signatureBounds.width * 0.55,
+    y: signatureBounds.height * 0.6,
+  },
+});
+await page.getByLabel("Assigned to").selectOption("recipient");
+await page.getByRole("button", { name: "Fill & sign", exact: true }).click();
+await page.getByRole("button", { name: "Sign & issue agreement →" }).click();
+await page.locator(".workspace-heading .badge.sent").waitFor();
+pass(
+  "Issue keeps a missing-recipient-signature layout editable until it is repaired",
+);
+
+await page
+  .getByRole("button", { name: "All agreements", exact: false })
+  .click();
+await page.getByRole("button", { name: "+ New blank agreement" }).click();
+await page.getByLabel("Agreement title").fill("Agreement-" + "W".repeat(80));
+await page.getByLabel("Template name").fill("Template-" + "W".repeat(80));
+await page.getByRole("button", { name: "Save as template" }).click();
+async function checkWidths() {
+  for (const width of [320, 390, 718, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    assert.equal(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > innerWidth,
+      ),
+      false,
+      `No horizontal overflow at ${width}px`,
+    );
+  }
+}
+await checkWidths();
+await page
+  .getByRole("button", { name: "All agreements", exact: false })
+  .click();
+await checkWidths();
+pass(
+  "Long agreement and template names wrap at five desktop and mobile widths",
+);
+
+page.once("dialog", (dialog) => dialog.accept());
+await page.getByRole("button", { name: "Reset demo data" }).click();
+assert.equal(await page.locator(".document-row").count(), 2);
+assert.equal(await page.locator(".template-card").count(), 1);
+await page.reload();
+assert.equal(await page.locator(".document-row").count(), 2);
+pass("Reset restores demo documents and templates and survives refresh");
+
+await page
+  .getByRole("button", { name: /Master Agreement — draft demo/ })
+  .click();
+const savedBeforeFailure = await page.evaluate(() =>
+  localStorage.getItem("cedarsign:v1"),
+);
+await page.evaluate(() => {
+  window.restoreStorageSetItem = Storage.prototype.setItem;
+  Storage.prototype.setItem = () => {
+    throw new DOMException("Storage full", "QuotaExceededError");
+  };
+});
+await page.getByLabel("Send to").selectOption("casey");
+await page.getByRole("alert").filter({ hasText: "Storage full" }).waitFor();
+assert.equal(await page.getByLabel("Send to").inputValue(), "");
+assert.equal(
+  await page.evaluate(() => localStorage.getItem("cedarsign:v1")),
+  savedBeforeFailure,
+);
+await page.evaluate(() => {
+  Storage.prototype.setItem = window.restoreStorageSetItem;
+  delete window.restoreStorageSetItem;
+});
+pass(
+  "Storage failure reports an error without changing the agreement or saved data",
+);
 assert.deepEqual(errors, []);
 pass("No browser runtime errors");
 console.log(JSON.stringify({ passed: results.length, results }, null, 2));

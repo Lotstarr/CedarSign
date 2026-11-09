@@ -64,3 +64,13 @@ After the user changed visibility, the connected GitHub app confirmed Lotstarr/C
 ## Field placement usability regression
 
 The production build and six service tests pass after clarifying placement controls. The browser suite now passes **13 checkpoints**. The additional checkpoint reproduces the reported blank Date flow at 718 × 827: no field is created by selecting a tool alone; the empty picker is explicitly disabled; clicking page 2 creates and selects Date; signing-date autofill can be changed; selecting an existing field cancels pending placement; deleting the last field restores the empty state. Prompt and configured-state screenshots were inspected.
+
+## Comprehensive functional and visual review
+
+The final production build passes, with **8 service tests** and **17 browser checkpoints** passing. Added coverage verifies manual dates, automatic sender snapshots, missing-recipient-signature layouts, repair before issue, reset persistence, and storage-write failure behavior. A separate browser check confirmed invalid saved JSON displays recovery and that resetting returns to the seeded dashboard.
+
+Dashboard and agreement layouts were inspected at 320, 390, 718, 1024, and 1440 pixel widths, including unusually long unbroken document/template names. After the wrapping fix, none of those checks produced horizontal overflow. Populated desktop agreement screenshots show readable source typography and aligned captured values/signatures. The layout editor now displays “Signer Name” in the toolbar, type selector, and placement instructions.
+
+Two review findings were fixed: an agreement could previously be issued without a recipient signature field, leaving it impossible to complete; and long names could stretch the layout horizontally. Issue now keeps the document editable until the recipient signature field is added. Existing signing, permissions, templates, and persistence checks remain passing.
+
+Scope: browser automation used Chromium with fresh isolated storage. This is not an exhaustive cross-browser, accessibility, or production-security assessment. The application remains a single-browser simulated-user/localStorage demo, as allowed by the assignment. This review and the fixes are post-timebox work.
