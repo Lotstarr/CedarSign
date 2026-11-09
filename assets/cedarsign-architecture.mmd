@@ -1,0 +1,18 @@
+flowchart TB
+  subgraph browserApp["CedarSign - one browser"]
+    subgraph userInterface["React interface"]
+      dashboard["Dashboard"]
+      workspace["Agreement Workspace and shared canvas"]
+      templates["Reusable Template Actions"]
+    end
+    services["Document and Template Services: permissions, validation, signing"]
+    state["React Context: current application data"]
+    repository["Repository: loading and saving"]
+    storage[("Browser localStorage")]
+    dashboard -->|"Create agreements"| services
+    workspace -->|"Edit, issue, complete"| services
+    templates -->|"Save and reuse layouts"| services
+    services -->|"Validated updates"| state
+    state <-->|"Load and commit"| repository
+    repository <-->|"Read and write"| storage
+  end

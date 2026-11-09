@@ -15,40 +15,68 @@ Open the URL printed by Vite. No database, credentials, or environment variables
 
 `npm test` runs service tests. `npm run build` checks TypeScript and creates production assets.
 
+There is also a Vercel deployment at [cedarsign.vercel.app](https://cedarsign.vercel.app). It currently requires Vercel authorization. The local setup above works without access to that deployment.
+
 ## 2. Architecture overview
 
-The model separates original document pages, reusable template layouts, individual signing agreements, and captured values. An agreement owns its sender, recipient, status, copied field definitions, and values. Sender/recipient are roles within an agreement, not permanent user types.
+CedarSign lets a sender, like Jordan, start with a template or a blank layout on the Master Agreement. They can give it a title, choose who it goes to, add and edit fields, and fill out their own information and signature. When they issue it, their information and the layout are locked. The recipient can then review the document, fill out their fields, and sign their part. Once completed, the whole agreement is locked.
 
-React Context holds shared application state. Pure TypeScript services handle capabilities, validation, signing transitions, and templates. A versioned localStorage repository owns persistence. The UI adopts new state only after saving succeeds.
+I think of the app in three main pieces:
 
-One AgreementCanvas renders the same page geometry in configuration, signing, and read-only modes. The sidebar provides field properties and a readable form when overlays are small. Drafts are configurable by the sender; Sent locks layout and sender values; Completed is read-only. Dashboard filtering and direct-document access share the same permission rules.
+1. **The dashboard:** shows how many drafts you have, how many agreements are awaiting a signature, and how many are completed. It also lists the agreements you can open.
+2. **The agreement workspace:** where you work on an agreement, choose its recipient, set up the fields, and fill or review the document.
+3. **Templates:** the extra feature I chose, so a sender can reuse a layout instead of setting it up every time.
 
-## 3. Five key decisions and trade-offs
+The original pages, the template layout, and each agreement's entered information are kept separate. Each agreement has its own sender, recipient, status, fields, and values.
 
-1. **React, TypeScript, and Vite:** a small foundation for UI, typed models, development, and builds. Tailwind/local CSS handle styling, Vitest checks services, and Playwright checks browser workflows.
-2. **Page images and relative coordinates:** images are explicitly allowed by the assignment. Fields store a page index and x/y/width/height fractions, rendered as percentages within the preserved page aspect ratio. This avoids a runtime PDF-rendering dependency but makes document text non-selectable. MuPDF generates the committed page images with correct standard-font rendering.
-3. **Centralized permissions and immutable transitions:** editability derives from status and ownership rather than separate lock flags. Signing validates a copy before returning a new state, so invalid input cannot partially sign the agreement. Automatic names/dates are captured at signing; signing dates use UTC, and manual dates are preserved.
-4. **localStorage behind a repository:** refresh persistence without backend setup. Data stays in one browser; switching users simulates the workflow rather than delivering data to another device. Production would require authentication, server-side authorization, transactional storage, and concurrency handling.
-5. **Click placement and typed signatures:** both meet the assignment while keeping effort focused on ownership, validation, and lifecycle correctness. Dragging/resizing, drawn signatures, and arbitrary PDF uploads are omitted.
+React Context keeps track of the app's current data. The shared services are where the editing, validation, and signing rules live. The repository handles loading and saving in localStorage. The workspace uses the same document canvas for placing fields, filling them in, and reviewing them.
+
+The information stays in the browser when you refresh. Reset Demo Data clears your changes and restores the examples. Switching users keeps the data, but only shows the agreements that user is allowed to see. The user switcher is a simulation, not a real login.
+
+### Architecture diagram
+
+![CedarSign architecture diagram](assets/cedarsign-architecture.png)
+
+[SVG version](assets/cedarsign-architecture.svg) · [Mermaid source](assets/cedarsign-architecture.mmd)
+
+Everything shown runs in the browser. The template controls are part of the dashboard and workspace.
+
+## 3. Key decisions and trade-offs
+
+1. **Field positions as percentages.** Each field records its page, position, and size. Using percentages for position and size makes the fields adjust to different page sizes and stay in the correct spot. Fixed pixel positions would not automatically scale with the page. We have to calculate the position relative to the page, but that makes resizing work.
+
+2. **localStorage.** This was quicker and easier than setting up a backend or database. It kept the project simple, but the information only stays in that browser. Someone on another computer would not automatically have the same agreements.
+
+3. **Shared permissions and signing rules.** We kept these in one place so we would not have to handle the rules separately on every screen. It adds a services layer, but keeps things organized and gives us one spot to maintain the rules.
+
+4. **A simple, functional scope.** We chose page images, click placement, and typed signatures so we could focus on what the app needed to accomplish. That meant leaving out things like dragging fields and drawing signatures by hand, but kept the signing workflow straightforward.
+
+The app uses React for the interface and shared state, TypeScript to help catch mismatched data and function calls, and Vite to run and build it. Tailwind and local CSS handle styling. Vitest checks the signing rules, and Playwright checks the workflow in a browser. These tools support the simple setup and the checks we needed.
 
 ## 4. Additional feature: reusable templates
 
-Templates save repeated agreement setup. A sender can save a draft's field definitions and create fresh agreements from that layout.
+I wanted the extra feature to be something useful for this simple MVP. Templates let someone use the same contract layout for different customers without adding all the fields again.
 
-New instances deeply copy definitions, generate fresh field IDs, and start with no recipient or captured values. They cannot inherit another customer's signatures or mutate sibling agreements through shared references. Template operations have their own service and use the same source-document model and repository as the core workflow. A standard 17-field template is included.
+On the dashboard, you can click **Use template** under **Start with a template**, which opens a new agreement in the workspace. You can also choose **New blank agreement**, set up the fields yourself, and use **Save as template** in the workspace to save that layout under a name.
+
+The new agreement copies the field positions, labels, types, required flags, sender/recipient assignments, and automatic-date settings. The entered information, signatures, captured dates, and recipient selection start empty, and each field gets a new ID. This keeps old customer information and signatures from carrying into another agreement. Changing the new agreement does not change the template it came from. A separate template service handles saving and copying layouts, and the repository stores templates alongside the agreements.
 
 ## 5. How AI was used
 
-Codex helped generate the scaffold, models, services, interface, tests, and documentation from the agreed plan. Planning materials incorporated ChatGPT, Gemini, and Claude. I reviewed the actual workflow and identified issues; compiler checks, service tests, browser checks, and screenshots provided additional verification.
+I used Claude, Codex, and Gemini to brainstorm and create a master prompt. I read through the instructions, worked through my decisions with Codex, and put together a game plan. I then asked all three AIs for their approach and merged their outputs into the plan I used to build this.
 
-A concrete change to generated output was the document renderer: I flagged distorted PDF lettering, and the converted images were regenerated with MuPDF while preserving the original PDF and field geometry. I also flagged confusing placement controls. The interface now distinguishes choosing a tool from placing a field, then automatically selects the new field for editing.
+Codex handled the building, and I used Claude to review it. AI wrote the code. I made the key decisions, checked that the app did what I wanted, and asked for changes when something did not work or did not match what I had in mind.
 
-Functional review also identified an agreement that could be issued without a recipient signature field, making completion impossible after locking. Issue now rejects that layout while it remains editable; regression checks cover rejection and repair. These are actual corrections to the generated result.
+One suggestion I decided against was notifications so someone could know when an agreement was received or signed. I felt that added more than I wanted for this version. I chose templates because they added something directly useful while keeping the app simple.
+
+I checked the result by using it and working through the sender and recipient steps myself. I pointed out things like the confusing field-placement controls and the jumbled lettering on the document, and had those corrected.
+
+For this write-up, I explained my ideas in my own words and used AI to organize them, refine the wording, and check technical details. AI also helped with the setup instructions and architecture diagram.
 
 ## 6. What's unfinished
 
-This is a simulated-user demo, with no real email delivery, backend security, cryptographic signing, or signed-PDF export. Browser storage is user-modifiable and does not synchronize across devices or tabs. It has basic validation and a versioned envelope, not a complete migration/runtime-schema system.
+Right now, everything is stored in one browser, so it would not carry across different people's computers. There is no real sign-in or way to add another user; there are just the three example users. There is also no shared backend or database. I would want customer information stored more carefully, with secure sign-in and server-side rules controlling who can access or change each agreement.
 
-Only the supplied agreement is supported. Full-page overlays become small on narrow screens; the sidebar provides the practical editing form. Verification used Chromium, not a full browser or accessibility matrix.
+We can create multiple signing agreements, but they all use the same Master Agreement that was provided. I can change the fields and what gets filled in, but I cannot edit the actual agreement text. Templates do not change that either.
 
-The production build, eight service tests, and seventeen browser checkpoints pass. These support the checked workflows, not exhaustive coverage or production readiness. Public GitHub source and local setup are available; hosted-demo access is managed separately. See VERIFICATION.md and DEPLOYMENT.md.
+The first things I would add are support for different agreement documents and real user accounts. I would also want a way to update the agreement itself, not just the fields on it. Before a business could use this with real customers, it would need a secure way to share an agreement with someone and let them open and sign it on their own device. Right now, the user switcher only demonstrates that process within one browser.
