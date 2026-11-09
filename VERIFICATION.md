@@ -38,7 +38,7 @@ Visual inspection is the evidence for typography quality; the browser suite chec
 
 ## Delivery checks
 
-The public GitHub source tree was compared with the local committed source. The deployment reports READY, and authenticated requests returned the expected application assets. The original PDF is preserved. A limited source scan for common private-key, GitHub-token, and AWS-key patterns found no matches.
+The public GitHub source tree was compared with the local committed source. The deployment reports READY, and requests through the connected hosting tool returned the expected application assets. The production domain is configured for public access; a manual private-window check confirmed that the dashboard opens without Vercel sign-in. Preview and generated deployment URLs retain authentication protection. The original PDF is preserved. A limited source scan for common private-key, GitHub-token, and AWS-key patterns found no matches.
 
 ## Scope
 

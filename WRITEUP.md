@@ -15,7 +15,7 @@ Open the URL printed by Vite. No database, credentials, or environment variables
 
 `npm test` runs service tests. `npm run build` checks TypeScript and creates production assets.
 
-There is also a Vercel deployment at [cedarsign.vercel.app](https://cedarsign.vercel.app). It currently requires Vercel authorization. The local setup above works without access to that deployment.
+CedarSign is also hosted on Vercel: [Open the live demo](https://cedarsign.vercel.app). The production link is public, so you can try it there or use the local setup above.
 
 ## 2. Architecture overview
 

@@ -2,6 +2,12 @@
 
 A small React document-signing app built around the supplied two-page Master Agreement. A sender places fields, fills and signs their part, then issues the agreement to a recipient. The recipient completes their fields and signs, locking the completed document. Reusable templates are the additional feature.
 
+## Live demo
+
+CedarSign is hosted on Vercel: **[Open the live demo](https://cedarsign.vercel.app)**.
+
+The production link is public, so reviewers can try the app without a Vercel account. Use the user switcher to act as Jordan, Casey, or Morgan. Agreements are saved in the browser you use. You can also run the project locally using the instructions below.
+
 ## Run locally
 
 Use Node 22.12+ in the 22 release line or Node 24+, with npm.
