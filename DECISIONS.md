@@ -1,51 +1,29 @@
 # Engineering decisions
 
-Implementation started November 7, 2026, 7:44:34 PM MST (02:44:34 UTC November 8). The strict 90-minute budget ends 04:14:34 UTC. Planning, environment inspection, and attachment review occurred before the timer; no application code or PDF rendering was prepared then.
+## Separate pages, layouts, agreements, and values
 
-- React/TypeScript/Vite with pure services: keeps business rules testable independently of the interface. This environment runs Node 24.22.1; Node 22 was recommended during setup but not installed. Both satisfy the selected Vite runtime requirement.
-- Source documents, template layouts, signing instances, and values are distinct. New instances clone definitions and generate fresh field IDs.
-- One centralized capability function controls permissions. Field locks are derived from lifecycle and ownership, avoiding redundant mutable flags.
-- Signing transitions clone, capture automatic fields, and validate before returning a new document. Dates use the UTC calendar date of the signing timestamp; simulated users have no timezone setting.
-- The PDF is pre-rendered to Letter-aspect-ratio PNGs. Normalized rectangles are measured visually on the actual pages, below printed labels.
-- Synchronous versioned localStorage repository: simple offline demo persistence with a clear data seam. This is simulated authorization, not production security. Invalid stored data raises an explicit error rather than silently overwriting it.
-- Reusable templates are the single additional feature. Their layouts are copied, never shared by mutable reference.
-- Field configuration discards stale values when type, ownership, or automatic-date behavior changes. Changing ownership or field type must not retain an earlier signer's input.
-- Repository visibility has not been verified in this runtime. Agreement materials will not be pushed or deployed publicly without confirming publication permission.
+SourceDocument represents the original pages. DocumentTemplate stores reusable field definitions. SigningDocument owns the sender, recipient, status, copied definitions, and captured values for one agreement. Creating from a template deeply copies definitions, generates fresh field IDs, and starts with empty values. This prevents changes or signatures from carrying between customers.
 
-## Verified corrections to AI-generated work
+## Keep rules outside the interface
 
-- The initial reset handler contained a missing JSX brace. TypeScript caught it and the handler was corrected before browser verification.
-- Screenshot inspection showed text clipping in short field overlays. The initial text sizing and line-height were changed, and the signature fallback font was replaced with a bundled Caveat font (OFL license).
-- The initial browser placement check clicked the same coordinates repeatedly and hit existing fields. The test was corrected to use separate locations; then it exposed an overly strict label query. Those are test corrections, not claimed application defects.
+Pure TypeScript services own validation and document transitions. A shared capability function determines visibility and editing permissions from status and ownership. Layout and value locking are derived from those rules, avoiding separate lock flags that could disagree. The UI and services use the same rules.
 
-## Implementation checkpoint
+Issue and completion operate on a copy, validate the relevant party's fields, and return a new document only on success. Issue also requires a recipient signature field so the locked agreement can be completed. Automatic names and UTC signing dates are captured at signing; manual dates are preserved.
 
-Final implementation checks completed at 2026-11-08T02:56:27+00:00. Elapsed wall time since implementation start: 11 minutes 53 seconds, within the 90-minute budget. Clean install, production build, six service tests, and twelve browser checkpoints passed. Local commit and ZIP packaging follow this checkpoint; GitHub authentication blocks remote delivery.
+## Use one canvas with page-relative coordinates
 
-## Post-implementation delivery review — November 8, 2026 (America/Denver)
+Each field stores a page index and x/y/width/height fractions. CSS percentages and the preserved Letter aspect ratio keep fields aligned as the page resizes. Placement is clamped inside page boundaries. The same canvas supports configuration, filling, and read-only viewing.
 
-The tested static build from application commit 34b02b1 was deployed directly through the connected Vercel app because CLI GitHub authentication failed. Vercel assigned the first deployment to production. Authentication protection is enabled for all deployments. Later review reconfirmed READY status and the user confirmed the hosted dashboard loads. The connected GitHub app confirms Lotstarr/CedarSign is public and still has starter content. No source push, public-access change, or collaborator invitation was made. This later work updates delivery documentation and packaging only; it is outside the initial implementation checkpoint and does not change application functionality.
+Pre-rendered PDF images keep the runtime simple and are explicitly permitted by the assignment. MuPDF supplies clean standard-font rendering. The trade-off is that page text is not selectable. A sidebar form keeps editing practical when whole-page overlays are small.
 
-## Requested theme revision — November 8, 2026 (America/Denver)
+## Persist through a repository
 
-After the original timebox and human walkthrough, the user requested a blue-and-white theme inspired by Lotholmstead.com. The reference could not be retrieved through the available web/hosting tools, so the delivered palette is an explicit interpretation: royal blue #2563eb, navy #102f57, white cards, and pale blue #f5f9ff backgrounds. CSS theme variables centralize the palette. Sender/recipient overlays use different blue shades and solid/dashed borders. Build, six service tests, and twelve browser checkpoints passed after the change. This is additional styling and delivery work outside the original implementation checkpoint.
+React Context holds shared state; a synchronous repository owns versioned localStorage access. Persistence succeeds before UI state changes. Saved-data errors are reported rather than silently replacing data, and reset provides a recovery path.
 
-## Document typography correction
+Browser-local storage needs no backend setup but does not provide cross-device sharing, concurrency control, or real security. A production system would require authentication, server-enforced permissions, transactional persistence, and conflict handling.
 
-The user reported jumbled/spread-out text on the agreement pages. Inspection confirmed the distortion was baked into the original pdftoppm-generated PNGs, rather than the sidebar form values. The original PDF uses unembedded Helvetica and Times-Bold; its rendering in that conversion environment had incorrect glyph appearance/spacing. Re-rendering with MuPDF's standard PDF fonts produced clean text. Both images were regenerated at 180 DPI (1530 × 1980) with identical Letter page geometry; a reproducible optional Python script is included. The canvas adds a render-version query so existing stored documents request the corrected images. Original PDF bytes, user values, and normalized field definitions are preserved. Build, six service tests, and twelve browser checkpoints passed; corrected source pages and populated desktop screenshots were visually inspected. The earlier review failed to catch the rendering defect. This correction is additional work outside the original timebox.
+## Keep the scope focused
 
-## Private source delivery
+React, TypeScript, and Vite provide the application foundation; Tailwind and local CSS provide styling. Vitest checks services, and Playwright checks browser workflows. Click placement and typed signatures meet the assignment without dragging, resizing, or drawing infrastructure.
 
-After the user changed Lotstarr/CedarSign to private, the connected GitHub app verified visibility and write access. Source delivery uses Git data operations through that app because the CLI credential is invalid. A complete source snapshot is imported on top of the original GitHub README commit; detailed local checkpoint history remains in this workspace. The imported remote file tree is compared with the local committed tree. Reviewer invitations and Vercel access are separate remaining steps. This is delivery work outside the implementation timebox.
-
-## Public source sharing
-
-After verifying the full source upload, the user changed Lotstarr/CedarSign to public. The connected GitHub app verified that setting and the uploaded main branch. Public source access no longer requires a collaborator invitation. Vercel authentication protection remains a separate setting and was not changed.
-
-## Field placement guidance
-
-The user selected the Date placement tool on a blank agreement, then opened the field picker expecting a new field. No field exists until a page is clicked, which the earlier UI did not explain clearly enough. The layout panel now separates adding a field from editing an existing field, disables the empty picker with an explicit message, shows placed-field counts and page labels, and automatically selects a newly placed field. Selecting an existing field cancels the placement tool. The placement selection/success message is updated only after configuration succeeds. A browser regression check reproduces the blank Date flow at 718 × 827, verifies selection, manual/automatic date configuration, and deletion; all thirteen browser checkpoints and six service tests pass. This usability correction is post-timebox work.
-
-## Final review findings and corrections
-
-The requested review found an unfinishable custom-layout path: the sender could issue a draft with no recipient signature field, after which the locked layout prevented repair. Issue now rejects that layout before mutation, allowing the sender to add the missing field. Service and browser regression checks verify repair and successful issue. A responsive-layout audit also found overflow with long unbroken agreement/template names; these now wrap without widening the page. The user requested the friendly display label “Signer Name”; the internal field type remains signerName for compatibility with existing saved data. Build, eight service tests, and seventeen browser checkpoints passed. A separate corrupt-JSON recovery check passed. These are post-timebox review changes.
+Templates solve repeated agreement setup and extend the existing model without requiring scheduling or notification delivery. The blue-and-white palette uses shared CSS variables. Signer Name is a display label; the internal signerName type remains stable for saved-data compatibility.

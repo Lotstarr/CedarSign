@@ -2,50 +2,53 @@
 
 ## 1. How to run it
 
-Use Node 22.12+ in the 22 release line or Node 24+, then run `npm ci` and `npm run dev`. Open the URL Vite prints. No credentials or server are needed. `npm test` runs the service tests; `npm run build` checks TypeScript and builds production assets. README.md contains the exact demo and optional browser-test commands.
+Use Node 22.12+ in the 22 release line or Node 24+, with npm:
+
+```sh
+git clone https://github.com/Lotstarr/CedarSign.git
+cd CedarSign
+npm ci
+npm run dev
+```
+
+Open the URL printed by Vite. No database, credentials, or environment variables are needed. As Jordan, open the draft demo, choose Casey, enter a signature and title, and issue. Switch to Casey to complete and sign; Morgan demonstrates unrelated-user restrictions. README.md contains the full walkthrough and browser-test commands.
+
+`npm test` runs service tests. `npm run build` checks TypeScript and creates production assets.
 
 ## 2. Architecture overview
 
-The data model separates the original document pages (`SourceDocument`), reusable layout (`DocumentTemplate`), and each signing instance (`SigningDocument`). Each instance owns copied field definitions and a map of captured values with user IDs and timestamps. A user is a sender or recipient within a particular agreement, rather than having a permanent role.
+The model separates original document pages, reusable template layouts, individual signing agreements, and captured values. An agreement owns its sender, recipient, status, copied field definitions, and values. Sender/recipient are roles within an agreement, not permanent user types.
 
-React Context holds the authoritative application state. Components call pure services for capabilities, validation, configuration, issue, completion, and template operations. The synchronous repository stores versioned JSON in localStorage. It writes before updating UI state, so a failed storage write cannot display an apparently successful signing event. React components do not decide their own competing permission rules.
+React Context holds shared application state. Pure TypeScript services handle capabilities, validation, signing transitions, and templates. A versioned localStorage repository owns persistence. The UI adopts new state only after saving succeeds.
 
-`AgreementCanvas` renders both source-page images and the same field rectangles in layout, signing, and read-only modes. The workspace adds the properties editor and a readable sidebar form, which is especially useful when a whole page is scaled down on a phone. The dashboard filters documents through the same capability service used by direct-document access.
+One AgreementCanvas renders the same page geometry in configuration, signing, and read-only modes. The sidebar provides field properties and a readable form when overlays are small. Drafts are configurable by the sender; Sent locks layout and sender values; Completed is read-only. Dashboard filtering and direct-document access share the same permission rules.
 
-| Document state | Sender | Assigned recipient | Other users |
-| --- | --- | --- | --- |
-| Draft | Configure and fill sender fields | No access | No access |
-| Sent | Read-only | Fill recipient fields | No access |
-| Completed | Read-only | Read-only | No access |
+## 3. Five key decisions and trade-offs
 
-## 3. Three to five key decisions and trade-offs
-
-1. **Normalized page coordinates.** Every rectangle stores a page index and x/y/width/height fractions. CSS percentages and the source's Letter aspect ratio preserve positioning as page width changes. New fields are clamped inside the page. Coordinates were visually measured against the supplied PDF's rendered pages. This avoids PDF-coordinate conversion at runtime, at the cost of a fixed sample document and image-based text.
-2. **Derived permissions and immutable transitions.** One capability service defines access. Locking follows lifecycle and field ownership rather than mutable per-field lock flags. Signing clones the document, captures automatic names/dates, validates the appropriate party, and returns a new status only on success. Invalid transitions leave the original untouched. UTC signing dates avoid relying on an unspecified simulated-user timezone.
-3. **A repository seam with localStorage.** This keeps the take-home self-contained and refresh-persistent. It is not production security or a multi-user database. A real backend would need authentication, server-enforced permissions, transactional writes, and concurrency handling; replacing the repository alone would not establish those guarantees.
-4. **One canvas plus a sidebar form.** Shared geometry prevents sender and recipient layouts from drifting. The sidebar makes short fields practical at narrow widths. Click placement and property edits meet the core requirement; dragging, resizing, and drawn signatures were omitted.
-5. **Small dependency set.** React and Context handle UI/state; TypeScript checks domain boundaries; Vite builds; Tailwind and local CSS style the interface. Vitest exercises business rules. Playwright drives repeatable real-browser checks. A bundled OFL script font makes typed signatures consistent without a third-party font request at runtime.
+1. **React, TypeScript, and Vite:** a small foundation for UI, typed models, development, and builds. Tailwind/local CSS handle styling, Vitest checks services, and Playwright checks browser workflows.
+2. **Page images and relative coordinates:** images are explicitly allowed by the assignment. Fields store a page index and x/y/width/height fractions, rendered as percentages within the preserved page aspect ratio. This avoids a runtime PDF-rendering dependency but makes document text non-selectable. MuPDF generates the committed page images with correct standard-font rendering.
+3. **Centralized permissions and immutable transitions:** editability derives from status and ownership rather than separate lock flags. Signing validates a copy before returning a new state, so invalid input cannot partially sign the agreement. Automatic names/dates are captured at signing; signing dates use UTC, and manual dates are preserved.
+4. **localStorage behind a repository:** refresh persistence without backend setup. Data stays in one browser; switching users simulates the workflow rather than delivering data to another device. Production would require authentication, server-side authorization, transactional storage, and concurrency handling.
+5. **Click placement and typed signatures:** both meet the assignment while keeping effort focused on ownership, validation, and lifecycle correctness. Dragging/resizing, drawn signatures, and arbitrary PDF uploads are omitted.
 
 ## 4. Additional feature: reusable templates
 
-Templates make repeated customer agreements useful without repeating layout work. A draft's configured field definitions can be saved under a name. Creating from a template copies the definitions, generates new field IDs, assigns the current user as sender, and starts with no recipient or captured values.
+Templates save repeated agreement setup. A sender can save a draft's field definitions and create fresh agreements from that layout.
 
-Templates contain layouts, not signing values. Definitions are deeply copied, so editing an instance does not change its template or sibling documents. This behavior lives in a separate template service and uses the same source-document and repository abstractions as the core workflow. The standard 17-field layout is pre-seeded.
+New instances deeply copy definitions, generate fresh field IDs, and start with no recipient or captured values. They cannot inherit another customer's signatures or mutate sibling agreements through shared references. Template operations have their own service and use the same source-document model and repository as the core workflow. A standard 17-field template is included.
 
-## 5. How AI was used, including a genuine changed or rejected suggestion
+## 5. How AI was used
 
-The supplied planning document describes input from ChatGPT, Gemini, and Claude. Codex was used in this implementation session to generate the scaffold, models, services, React interface, tests, and documentation. Compiler output, service tests, browser checks, and screenshot inspection were used to check that generated work.
+Codex helped generate the scaffold, models, services, interface, tests, and documentation from the agreed plan. Planning materials incorporated ChatGPT, Gemini, and Claude. I reviewed the actual workflow and identified issues; compiler checks, service tests, browser checks, and screenshots provided additional verification.
 
-One concrete correction: screenshot inspection showed that the AI-generated text sizing clipped values inside short overlays. That sizing and line-height were changed, and the initial system cursive fallback was replaced with a bundled Caveat script font. Another correction was a missing JSX brace caught by TypeScript. The browser test itself also needed correction: repeated placement clicks were landing on an existing field, and an exact label query included select-option text. These are actual observed changes, not invented examples of rejecting an architectural proposal. The later functional review also caught a custom-layout dead end: issuing without a recipient signature field made completion impossible. Issue now validates that field exists before locking the layout. Regression checks cover both rejection and repair. In a later review, a user reported distorted PDF lettering that the initial screenshot review had missed. The page images were regenerated with MuPDF, which rendered the original PDF's standard fonts correctly; the source PDF and field geometry were preserved. This correction occurred after the initial implementation checkpoint.
+A concrete change to generated output was the document renderer: I flagged distorted PDF lettering, and the converted images were regenerated with MuPDF while preserving the original PDF and field geometry. I also flagged confusing placement controls. The interface now distinguishes choosing a tool from placing a field, then automatically selects the new field for editing.
 
-Planning, tool/repository inspection, and reading the attachments occurred before the implementation timer. Application scaffolding, dependency installation, PDF rendering, implementation, and verification occurred after the recorded start in DECISIONS.md. No application work was prepared before that timer. After the initial timebox and human walkthrough, a user-requested blue-and-white theme revision was applied and reverified; that additional styling and delivery work is outside the original implementation checkpoint.
+Functional review also identified an agreement that could be issued without a recipient signature field, making completion impossible after locking. Issue now rejects that layout while it remains editable; regression checks cover rejection and repair. These are actual corrections to the generated result.
 
 ## 6. What's unfinished
 
-- No real authentication, backend authorization, email delivery, cryptographic signing, or PDF export. These are intentionally outside this local demo's scope.
-- No field dragging/resizing, PDF upload, multiple source documents, or advanced filtering. Fields can be deleted and placed again.
-- localStorage has a versioned envelope and basic shape checks, but no complete runtime schema validation, migration system, cross-tab synchronization, or tamper protection. Very long documents and storage failures have not received broad compatibility testing.
-- Whole-page overlays become small on narrow screens; the sidebar provides the usable editing form. Page images preserve the sample's typography and are not selectable PDF text.
-- Browser verification used Chromium, not a full cross-browser or accessibility audit. Focused tests do not claim exhaustive coverage.
-- Reviewer access remains to be arranged. The full source snapshot was delivered through the connected GitHub app after CLI authentication failed; the user subsequently made the repository public. The tested build is deployed to Vercel with authentication protection for all deployments; the user confirmed the hosted dashboard loads. Sydney can access the public GitHub code without an invitation. Separate Vercel access or the submission ZIP is still needed to review the protected hosted demo or run it locally. Public hosting permission remains unconfirmed, so deployment protection remains enabled. See DEPLOYMENT.md.
-- Deployment and the later documentation/delivery review occurred after the initial implementation checkpoint. No application functionality was changed during that later review.
+This is a simulated-user demo, with no real email delivery, backend security, cryptographic signing, or signed-PDF export. Browser storage is user-modifiable and does not synchronize across devices or tabs. It has basic validation and a versioned envelope, not a complete migration/runtime-schema system.
+
+Only the supplied agreement is supported. Full-page overlays become small on narrow screens; the sidebar provides the practical editing form. Verification used Chromium, not a full browser or accessibility matrix.
+
+The production build, eight service tests, and seventeen browser checkpoints pass. These support the checked workflows, not exhaustive coverage or production readiness. Public GitHub source and local setup are available; hosted-demo access is managed separately. See VERIFICATION.md and DEPLOYMENT.md.
