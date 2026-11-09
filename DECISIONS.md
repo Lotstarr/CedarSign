@@ -37,3 +37,11 @@ The user reported jumbled/spread-out text on the agreement pages. Inspection con
 ## Private source delivery
 
 After the user changed Lotstarr/CedarSign to private, the connected GitHub app verified visibility and write access. Source delivery uses Git data operations through that app because the CLI credential is invalid. A complete source snapshot is imported on top of the original GitHub README commit; detailed local checkpoint history remains in this workspace. The imported remote file tree is compared with the local committed tree. Reviewer invitations and Vercel access are separate remaining steps. This is delivery work outside the implementation timebox.
+
+## Public source sharing
+
+After verifying the full source upload, the user changed Lotstarr/CedarSign to public. The connected GitHub app verified that setting and the uploaded main branch. Public source access no longer requires a collaborator invitation. Vercel authentication protection remains a separate setting and was not changed.
+
+## Field placement guidance
+
+The user selected the Date placement tool on a blank agreement, then opened the field picker expecting a new field. No field exists until a page is clicked, which the earlier UI did not explain clearly enough. The layout panel now separates adding a field from editing an existing field, disables the empty picker with an explicit message, shows placed-field counts and page labels, and automatically selects a newly placed field. Selecting an existing field cancels the placement tool. The placement selection/success message is updated only after configuration succeeds. A browser regression check reproduces the blank Date flow at 718 × 827, verifies selection, manual/automatic date configuration, and deletion; all thirteen browser checkpoints and six service tests pass. This usability correction is post-timebox work.

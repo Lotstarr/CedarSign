@@ -23,7 +23,7 @@ npm run preview  # serve the production build
 
 1. Start as **Jordan Vance** and open **Master Agreement — draft demo**.
 2. Choose **Casey Rivera** in **Send to**. Enter Jordan's signature and title under **Your fields**.
-3. To change the layout, choose **Place fields**. Choose a type and click a page. Select a field to edit its label, type, required flag, assignee, or date-autofill setting, or delete it. Switch back to **Fill & sign**.
+3. To change the layout, choose **Place fields**. Choose a type, then click the actual document where that field belongs. Choosing a type alone does not add a field. The new field is automatically selected under **Edit a placed field**, where you can change its label, type, required flag, assignee, or date-autofill setting, or delete it. A blank layout shows **No fields placed yet** until the first placement. Switch back to **Fill & sign**.
 4. Optionally enter a template name and choose **Save as template**.
 5. Choose **Sign & issue agreement**. The layout and Jordan's values become read-only.
 6. Switch to **Casey Rivera** in the header. Fill the customer information, signature, and title. Fax is optional; any supplied fax must be valid. Choose **Sign & complete agreement**.
@@ -58,7 +58,7 @@ See [WRITEUP.md](WRITEUP.md), [DECISIONS.md](DECISIONS.md), and [VERIFICATION.md
 
 ## Delivery
 
-Keep this project and the supplied assignment materials private until public hosting permission is confirmed. Vite builds to `dist/`; this hash-routed app does not require a catch-all server rewrite. The tested build is deployed at https://cedarsign.vercel.app with Vercel Authentication enabled for every deployment. See DEPLOYMENT.md for delivery details. The complete source snapshot is delivered to the private GitHub repository through the connected GitHub app. Reviewers must be invited as collaborators, or use the submission ZIP.
+The user chose public source delivery: https://github.com/Lotstarr/CedarSign. Vite builds to `dist/`; this hash-routed app does not require a catch-all server rewrite. The tested build is deployed at https://cedarsign.vercel.app with Vercel Authentication enabled for every deployment. See DEPLOYMENT.md for delivery details. The complete source snapshot is available in the public GitHub repository. No collaborator invitation is required to read or download it. The submission ZIP is also available.
 
 ## Regenerating document images
 

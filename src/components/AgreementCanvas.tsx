@@ -44,7 +44,13 @@ export function AgreementCanvas({
             <span>
               Page {pageIndex + 1} of {source.pages.length}
             </span>
-            <span>{configuring ? "Configure layout" : "Agreement"}</span>
+            <span>
+              {placing
+                ? `Click this page to place ${placing}`
+                : configuring
+                  ? "Configure layout"
+                  : "Agreement"}
+            </span>
           </div>
           <div
             className={`agreement-page ${placing ? "placing" : ""}`}

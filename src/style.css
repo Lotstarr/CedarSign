@@ -444,6 +444,27 @@ footer {
   background: var(--primary);
   color: white;
 }
+.placement-help {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  margin-top: 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface-muted);
+  color: var(--ink);
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+.placement-help .link {
+  align-self: flex-start;
+}
+select:disabled {
+  background: var(--surface-muted);
+  color: var(--muted);
+  cursor: default;
+}
 .checkbox {
   flex-direction: row;
   align-items: center;

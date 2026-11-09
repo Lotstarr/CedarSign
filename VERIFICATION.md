@@ -56,3 +56,11 @@ The typography-fix production deployment is READY; authenticated requests for bo
 ## Private GitHub delivery
 
 The user changed Lotstarr/CedarSign to private; the connected GitHub app verified that setting and write access. The full committed source snapshot is uploaded through the connected app, with the remote tree SHA compared to the local committed tree. CLI authentication remains invalid. No reviewer invitation has been sent, and GitHub membership does not grant Vercel access.
+
+## Public repository verification
+
+After the user changed visibility, the connected GitHub app confirmed Lotstarr/CedarSign is public and main still contains the complete imported project. No invitation is needed for public code access. Vercel authentication remains enabled independently.
+
+## Field placement usability regression
+
+The production build and six service tests pass after clarifying placement controls. The browser suite now passes **13 checkpoints**. The additional checkpoint reproduces the reported blank Date flow at 718 × 827: no field is created by selecting a tool alone; the empty picker is explicitly disabled; clicking page 2 creates and selects Date; signing-date autofill can be changed; selecting an existing field cancels pending placement; deleting the last field restores the empty state. Prompt and configured-state screenshots were inspected.

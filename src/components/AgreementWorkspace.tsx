@@ -40,12 +40,14 @@ export function AgreementWorkspace({
       action();
       setError("");
       setNotice("");
+      return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
+      return false;
     }
   }
   function configure(patch: Parameters<typeof configureDocument>[2]) {
-    attempt(() => updateDocument(configureDocument(doc, user, patch)));
+    return attempt(() => updateDocument(configureDocument(doc, user, patch)));
   }
   function updateField(patch: Partial<FieldDefinition>) {
     if (selected)
@@ -152,40 +154,71 @@ export function AgreementWorkspace({
           </section>
           {configuring ? (
             <section className="panel">
-              <h2>Field layout</h2>
+              <h2>
+                Field layout{" "}
+                <span className="muted">({doc.fields.length} placed)</span>
+              </h2>
+              <p className="hint">1. Choose the type of field to add.</p>
               <div className="field-tools">
                 {fieldTypes.map((type) => (
                   <button
                     key={type}
                     className={placing === type ? "active" : ""}
-                    onClick={() => setPlacing(placing === type ? null : type)}
+                    aria-pressed={placing === type}
+                    onClick={() => {
+                      setPlacing(placing === type ? null : type);
+                      setSelectedId(null);
+                      setNotice("");
+                    }}
                   >
                     {type}
                   </button>
                 ))}
               </div>
               {placing && (
-                <p role="status" className="hint">
-                  Click a page to place {placing}.{" "}
+                <p role="status" className="placement-help">
+                  <strong>
+                    2. Click the document to place your {placing} field.
+                  </strong>
+                  <span>
+                    {placing === "date"
+                      ? "For a signing date, click the Date cell on page 2. The field will then appear in the list below."
+                      : "Choose the spot where this field should appear. It will then be selected below."}
+                  </span>
                   <button className="link" onClick={() => setPlacing(null)}>
-                    Cancel
+                    Cancel placement
                   </button>
                 </p>
               )}
               <label>
-                Selected field
+                Edit a placed field
                 <select
+                  aria-label="Edit a placed field"
+                  disabled={doc.fields.length === 0}
                   value={selectedId ?? ""}
-                  onChange={(e) => setSelectedId(e.target.value || null)}
+                  onChange={(e) => {
+                    setSelectedId(e.target.value || null);
+                    setPlacing(null);
+                  }}
                 >
-                  <option value="">Select a field</option>
+                  <option value="">
+                    {doc.fields.length
+                      ? "Choose an existing field"
+                      : "No fields placed yet"}
+                  </option>
                   {doc.fields.map((f) => (
                     <option value={f.id} key={f.id}>
-                      {f.label} · {f.assignee}
+                      {f.label} · page {f.pageIndex + 1} · {f.assignee}
                     </option>
                   ))}
                 </select>
               </label>
+              {doc.fields.length === 0 && (
+                <p className="hint">
+                  This list fills up after you place fields on the document.
+                  Selecting a type alone does not create a field.
+                </p>
+              )}
               {selected && (
                 <div className="field-properties">
                   <label>
@@ -392,7 +425,10 @@ export function AgreementWorkspace({
           configuring={configuring}
           placing={configuring ? placing : null}
           selectedId={selectedId}
-          onSelect={setSelectedId}
+          onSelect={(id) => {
+            setSelectedId(id);
+            setPlacing(null);
+          }}
           onFill={(id, value) =>
             attempt(() => updateDocument(fillField(doc, user, id, value)))
           }
@@ -418,9 +454,13 @@ export function AgreementWorkspace({
               },
               autoFillSigningDate: placing === "date",
             };
-            configure({ fields: [...doc.fields, field] });
-            setSelectedId(field.id);
-            setPlacing(null);
+            if (configure({ fields: [...doc.fields, field] })) {
+              setSelectedId(field.id);
+              setPlacing(null);
+              setNotice(
+                `${field.label} field added to page ${pageIndex + 1}. Edit its properties under “Edit a placed field.”`,
+              );
+            }
           }}
         />
       </div>

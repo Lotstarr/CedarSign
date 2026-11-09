@@ -207,6 +207,53 @@ await page
   .click();
 await page.getByRole("button", { name: "+ New blank agreement" }).click();
 await page.getByRole("button", { name: "Place fields", exact: true }).click();
+await page.setViewportSize({ width: 718, height: 827 });
+const fieldPicker = page.getByRole("combobox", {
+  name: "Edit a placed field",
+  exact: true,
+});
+assert.equal(await fieldPicker.isDisabled(), true);
+await page.getByRole("button", { name: "date", exact: true }).click();
+assert.equal(await page.locator(".field-overlay").count(), 0);
+assert.equal(
+  await page
+    .getByRole("button", { name: "date", exact: true })
+    .getAttribute("aria-pressed"),
+  "true",
+);
+await page
+  .getByRole("status")
+  .filter({ hasText: "Click the document to place your date field" })
+  .waitFor();
+await page
+  .locator(".workspace-sidebar > .panel")
+  .nth(1)
+  .screenshot({ path: "artifacts/date-placement-prompt.png" });
+const secondPage = page.locator(".agreement-page").nth(1);
+const secondBounds = await secondPage.boundingBox();
+await secondPage.click({
+  position: { x: secondBounds.width * 0.76, y: secondBounds.height * 0.55 },
+});
+assert.equal(await fieldPicker.isEnabled(), true);
+assert.equal(
+  await fieldPicker.locator("option:checked").textContent(),
+  "Date · page 2 · sender",
+);
+assert.equal(await page.getByLabel("Capture signing date").isChecked(), true);
+await page.getByLabel("Capture signing date").uncheck();
+assert.equal(await page.getByLabel("Capture signing date").isChecked(), false);
+await page.getByRole("button", { name: "date", exact: true }).click();
+await fieldPicker.selectOption({ label: "Date · page 2 · sender" });
+assert.equal(await page.locator(".agreement-page.placing").count(), 0);
+await page
+  .locator(".workspace-sidebar > .panel")
+  .nth(1)
+  .screenshot({ path: "artifacts/date-placement-configured.png" });
+await page.getByRole("button", { name: "Delete field" }).click();
+assert.equal(await fieldPicker.isDisabled(), true);
+pass(
+  "Blank draft explains date placement, selects the new field, and enables its properties",
+);
 await page.setViewportSize({ width: 1440, height: 1000 });
 for (const type of [
   "text",
